@@ -101,6 +101,18 @@ function App() {
     setDrawPoints(drawPoints.slice(0, -1));
   };
 
+  // Shortcut for Undo (Ctrl+Z)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isDrawing && (e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undoDrawPoint();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawing, drawPoints]);
+
   const completeDrawing = () => {
     if (drawPoints.length < 3) return;
     const coordinates = [[...drawPoints, drawPoints[0]]];
