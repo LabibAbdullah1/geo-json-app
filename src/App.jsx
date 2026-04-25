@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from './components/Editor';
 import MapView from './components/MapView';
-import { Map, Code2, AlertCircle, Info, ChevronLeft, ChevronRight, PenTool, Trash2, CheckCircle, XCircle, Copy, Save, FileText, Plus, Clock } from 'lucide-react';
+import { Map, Code2, AlertCircle, Info, ChevronLeft, ChevronRight, PenTool, Trash2, CheckCircle, XCircle, Copy, Save, FileText, Plus, Clock, Sun, Moon } from 'lucide-react';
 
 const INITIAL_GEOJSON = {
   "type": "FeatureCollection",
@@ -22,13 +22,24 @@ function App() {
   const [savedProjects, setSavedProjects] = useState([]);
   const [copyStatus, setCopyStatus] = useState('Copy');
 
+  const [mapTheme, setMapTheme] = useState('dark');
+
   // Load projects from LocalStorage on mount
   useEffect(() => {
     const localData = localStorage.getItem('geojson_projects');
     if (localData) {
       setSavedProjects(JSON.parse(localData));
     }
+    // Load theme preference
+    const localTheme = localStorage.getItem('geojson_theme');
+    if (localTheme) setMapTheme(localTheme);
   }, []);
+
+  const toggleTheme = () => {
+    const newTheme = mapTheme === 'dark' ? 'light' : 'dark';
+    setMapTheme(newTheme);
+    localStorage.setItem('geojson_theme', newTheme);
+  };
 
   useEffect(() => {
     try {
@@ -147,6 +158,10 @@ function App() {
         <div className="header-actions">
           {!isDrawing ? (
             <>
+              <button onClick={toggleTheme} className="btn-ghost">
+                {mapTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                {mapTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </button>
               <button onClick={startDrawing} className="btn-primary"><PenTool size={18} /> Gambar</button>
               <button onClick={saveToLocal} className="btn-success"><Save size={18} /> Simpan</button>
               <button onClick={copyToClipboard} className="btn-ghost">
@@ -226,6 +241,7 @@ function App() {
           <MapView 
             data={geoData} onUpdateData={handleDataUpdate}
             isDrawing={isDrawing} drawPoints={drawPoints} onAddPoint={handleAddPoint}
+            mapTheme={mapTheme}
           />
         </div>
       </main>

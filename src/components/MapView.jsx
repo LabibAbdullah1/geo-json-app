@@ -55,8 +55,12 @@ function ZoomControls() {
   );
 }
 
-const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint }) => {
+const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, mapTheme }) => {
   
+  const tileUrl = mapTheme === 'light' 
+    ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+    : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+
   const handleMarkerDragEnd = (featureIndex, coordIndex, latlng, type = 'Point', ringIndex = 0, polyIndex = 0) => {
     const newData = JSON.parse(JSON.stringify(data));
     const feature = newData.features[featureIndex];
@@ -90,8 +94,9 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint }) => {
       zoomControl={false}
     >
       <TileLayer
+        key={mapTheme} // Force re-render of tiles on theme change
         attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url={tileUrl}
       />
       
       <MapEvents onAddPoint={onAddPoint} isDrawing={isDrawing} />
@@ -101,7 +106,7 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint }) => {
         <>
           <Polyline 
             positions={drawPoints.map(p => [p[1], p[0]])} 
-            color="#6366f1" 
+            color={mapTheme === 'light' ? '#4f46e5' : '#6366f1'} 
             weight={3} 
             dashArray="5, 10"
           />
@@ -118,14 +123,14 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint }) => {
       {/* Base GeoJSON Layer */}
       {data && (
         <GeoJSON 
-          key={`geojson-${JSON.stringify(data)}`}
+          key={`geojson-${JSON.stringify(data)}-${mapTheme}`}
           data={data} 
           style={{
-            fillColor: '#6366f1',
+            fillColor: mapTheme === 'light' ? '#4f46e5' : '#6366f1',
             weight: 2,
             opacity: 1,
-            color: '#818cf8',
-            fillOpacity: 0.15,
+            color: mapTheme === 'light' ? '#4338ca' : '#818cf8',
+            fillOpacity: 0.2,
           }}
         />
       )}
