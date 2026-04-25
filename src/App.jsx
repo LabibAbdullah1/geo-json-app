@@ -144,7 +144,7 @@ function App() {
           <h1 className="gradient-text">Mapper Geo JSON by LABIB</h1>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="header-actions">
           {!isDrawing ? (
             <>
               <button onClick={startDrawing} className="btn-primary"><PenTool size={18} /> Gambar</button>
