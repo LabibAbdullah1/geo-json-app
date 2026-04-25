@@ -174,13 +174,13 @@ body {
 }
 
 .custom-zoom-controls {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  z-index: 1000;
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1500;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .zoom-btn {
@@ -402,6 +402,21 @@ button {
 
   .gradient-text {
     font-size: 1.1rem !important;
+  }
+  .custom-zoom-controls {
+    bottom: 20px !important;
+    right: 20px !important;
+    gap: 12px !important;
+    z-index: 1900 !important;
+  }
+
+  .zoom-btn {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 1.5rem !important;
+    border-radius: 10px !important;
+    background: var(--primary) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
   }
 }
 
