@@ -21,6 +21,10 @@ function App() {
   const [savedProjects, setSavedProjects] = useState([]);
   const [copyStatus, setCopyStatus] = useState('Copy');
   const [shouldFitBounds, setShouldFitBounds] = useState(false);
+  
+  // New drawing management
+  const [activeDrawIndex, setActiveDrawIndex] = useState(-1);
+  const [isPathBroken, setIsPathBroken] = useState(false);
 
   const [mapTheme, setMapTheme] = useState('dark');
 
@@ -96,27 +100,70 @@ function App() {
   const startDrawing = () => {
     setIsDrawing(true);
     setDrawPoints([]);
+    setActiveDrawIndex(-1);
+    setIsPathBroken(false);
   };
 
   const cancelDrawing = () => {
     setIsDrawing(false);
     setDrawPoints([]);
+    setActiveDrawIndex(-1);
+    setIsPathBroken(false);
   };
 
   const handleAddPoint = (latlng) => {
     if (!isDrawing) return;
-    setDrawPoints([...drawPoints, [latlng.lng, latlng.lat]]);
+    const newPoint = [latlng.lng, latlng.lat];
+    const updated = [...drawPoints];
+    
+    // Masukkan setelah titik aktif
+    updated.splice(activeDrawIndex + 1, 0, newPoint);
+    setDrawPoints(updated);
+    setActiveDrawIndex(activeDrawIndex + 1);
+    
+    // Jika masih ada titik setelahnya, tandai tetap terputus kecuali jika kita baru saja menyambung
+    if (activeDrawIndex + 1 < updated.length - 1) {
+      setIsPathBroken(true);
+    } else {
+      setIsPathBroken(false);
+    }
   };
 
   const undoDrawPoint = () => {
-    if (drawPoints.length === 0) return;
-    setDrawPoints(drawPoints.slice(0, -1));
+    if (drawPoints.length === 0 || activeDrawIndex === -1) return;
+    
+    const updated = [...drawPoints];
+    updated.splice(activeDrawIndex, 1);
+    setDrawPoints(updated);
+    setActiveDrawIndex(activeDrawIndex - 1);
+    
+    if (activeDrawIndex > 0 && activeDrawIndex < updated.length) {
+      setIsPathBroken(true);
+    }
   };
 
   const deleteDrawPoint = (index) => {
-    // Menghapus titik pada index tersebut DAN semua titik setelahnya
-    const updated = drawPoints.slice(0, index);
+    const updated = [...drawPoints];
+    updated.splice(index, 1);
     setDrawPoints(updated);
+    
+    // Jika menghapus di tengah, peringatkan jalur terputus
+    if (index > 0 && index < updated.length) {
+      setIsPathBroken(true);
+    }
+
+    // Update active index agar tetap valid
+    if (index <= activeDrawIndex) {
+      setActiveDrawIndex(Math.max(-1, activeDrawIndex - 1));
+    } else if (activeDrawIndex >= updated.length) {
+      setActiveDrawIndex(updated.length - 1);
+    }
+  };
+
+  const clearTailPoints = () => {
+    const updated = drawPoints.slice(0, activeDrawIndex + 1);
+    setDrawPoints(updated);
+    setIsPathBroken(false);
   };
 
   const resumeDrawing = () => {
@@ -132,9 +179,12 @@ function App() {
     if (lastFeature.geometry.type === 'Polygon') {
       const coords = lastFeature.geometry.coordinates[0].slice(0, -1);
       setDrawPoints(coords);
+      setActiveDrawIndex(coords.length - 1);
       setIsDrawing(true);
     } else if (lastFeature.geometry.type === 'Point') {
-      setDrawPoints([lastFeature.geometry.coordinates]);
+      const coord = lastFeature.geometry.coordinates;
+      setDrawPoints([coord]);
+      setActiveDrawIndex(0);
       setIsDrawing(true);
     }
   };
@@ -157,6 +207,7 @@ function App() {
     }
     
     setDrawPoints(coords);
+    setActiveDrawIndex(coords.length - 1);
     setIsDrawing(true);
   };
 
@@ -184,6 +235,8 @@ function App() {
     handleDataUpdate(newData, true);
     setIsDrawing(false);
     setDrawPoints([]);
+    setActiveDrawIndex(-1);
+    setIsPathBroken(false);
   };
 
   const clearAll = () => {
@@ -275,6 +328,20 @@ function App() {
             <Editor value={jsonString} onChange={setJsonString} />
           </div>
 
+          {isDrawing && isPathBroken && (
+            <div className="error-toast warning" style={{ bottom: '80px', borderColor: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)' }}>
+              <AlertCircle size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ color: '#f59e0b', fontWeight: 'bold' }}>Gambar Terputus!</p>
+                <p style={{ color: 'rgba(245, 158, 11, 0.8)', fontSize: '0.75rem' }}>Anda menghapus titik di tengah atau memilih titik lama. Bagian setelahnya kini terpisah.</p>
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+                  <button onClick={clearTailPoints} className="btn-danger" style={{ padding: '4px 8px', fontSize: '0.7rem' }}>Hapus Bagian Terpisah</button>
+                  <button onClick={() => setIsPathBroken(false)} className="btn-ghost" style={{ padding: '4px 8px', fontSize: '0.7rem', color: '#f59e0b', borderColor: '#f59e0b' }}>Abaikan</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="error-toast">
               <AlertCircle size={20} color="#f87171" style={{ flexShrink: 0 }} />
@@ -299,6 +366,11 @@ function App() {
             mapTheme={mapTheme}
             shouldFitBounds={shouldFitBounds}
             onFitBoundsComplete={() => setShouldFitBounds(false)}
+            activeDrawIndex={activeDrawIndex}
+            onSetActiveDrawIndex={(idx) => {
+              setActiveDrawIndex(idx);
+              setIsPathBroken(idx < drawPoints.length - 1);
+            }}
           />
         </div>
       </main>

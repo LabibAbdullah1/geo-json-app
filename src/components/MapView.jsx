@@ -18,6 +18,13 @@ const vertexIcon = L.divIcon({
   iconAnchor: [5, 5],
 });
 
+const activeVertexIcon = L.divIcon({
+  className: 'custom-vertex-icon active',
+  html: '<div style="width: 14px; height: 14px; background: #f59e0b; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3); animation: pulse 2s infinite;"></div>',
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
 function MapEvents({ onAddPoint, isDrawing }) {
   useMapEvents({
     click(e) {
@@ -57,7 +64,7 @@ function ZoomControls() {
   );
 }
 
-const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDeleteDrawPoint, onEditFeature, mapTheme, shouldFitBounds, onFitBoundsComplete }) => {
+const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDeleteDrawPoint, onEditFeature, mapTheme, shouldFitBounds, onFitBoundsComplete, activeDrawIndex, onSetActiveDrawIndex }) => {
   
   const tileUrl = mapTheme === 'light' 
     ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -106,24 +113,52 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDele
       {/* Current Drawing Preview */}
       {isDrawing && drawPoints.length > 0 && (
         <>
+          {/* Active Path */}
           <Polyline 
-            positions={drawPoints.map(p => [p[1], p[0]])} 
+            positions={drawPoints.slice(0, activeDrawIndex + 1).map(p => [p[1], p[0]])} 
             color={mapTheme === 'light' ? '#4f46e5' : '#6366f1'} 
             weight={3} 
-            dashArray="5, 10"
           />
+          
+          {/* Tail Path (Disconnected) */}
+          {activeDrawIndex < drawPoints.length - 1 && (
+            <Polyline 
+              positions={drawPoints.slice(activeDrawIndex).map(p => [p[1], p[0]])} 
+              color="#9ca3af" 
+              weight={2} 
+              dashArray="5, 10"
+            />
+          )}
+
           {drawPoints.map((p, idx) => (
             <Marker 
               key={`draw-p-${idx}`} 
               position={[p[1], p[0]]} 
-              icon={vertexIcon}
-              eventHandlers={{
-                click: (e) => {
-                  L.DomEvent.stopPropagation(e);
-                  onDeleteDrawPoint(idx);
-                }
-              }}
-            />
+              icon={idx === activeDrawIndex ? activeVertexIcon : vertexIcon}
+              zIndexOffset={idx === activeDrawIndex ? 1000 : 0}
+            >
+              <Popup closeButton={false} className="mini-popup">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '4px' }}>
+                  <button 
+                    onClick={() => onSetActiveDrawIndex(idx)}
+                    style={{ 
+                      background: idx === activeDrawIndex ? '#f59e0b' : '#6366f1',
+                      color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer'
+                    }}
+                  >
+                    {idx === activeDrawIndex ? 'Titik Aktif' : 'Mulai dari sini'}
+                  </button>
+                  <button 
+                    onClick={() => onDeleteDrawPoint(idx)}
+                    style={{ 
+                      background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer'
+                    }}
+                  >
+                    Hapus Titik
+                  </button>
+                </div>
+              </Popup>
+            </Marker>
           ))}
         </>
       )}
