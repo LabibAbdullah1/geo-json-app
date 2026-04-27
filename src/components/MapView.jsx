@@ -32,7 +32,8 @@ function MapEvents({ onAddPoint, isDrawing }) {
 function BoundsHandler({ data, isDrawing }) {
   const map = useMap();
   useEffect(() => {
-    // Only auto-fit if we have data and ARE NOT drawing
+    // Auto-fit bounds dinonaktifkan agar tidak mengganggu posisi view user saat mengedit
+    /*
     if (!isDrawing && data && data.features && data.features.length > 0) {
       try {
         const bounds = L.geoJSON(data).getBounds();
@@ -41,6 +42,7 @@ function BoundsHandler({ data, isDrawing }) {
         }
       } catch (e) {}
     }
+    */
   }, [data, map, isDrawing]);
   return null;
 }
@@ -55,7 +57,7 @@ function ZoomControls() {
   );
 }
 
-const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, mapTheme }) => {
+const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDeleteDrawPoint, onEditFeature, mapTheme }) => {
   
   const tileUrl = mapTheme === 'light' 
     ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -114,7 +116,13 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, mapThe
             <Marker 
               key={`draw-p-${idx}`} 
               position={[p[1], p[0]]} 
-              icon={vertexIcon} 
+              icon={vertexIcon}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onDeleteDrawPoint(idx);
+                }
+              }}
             />
           ))}
         </>
@@ -147,7 +155,11 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, mapThe
               position={[lat, lng]}
               draggable={true}
               eventHandlers={{
-                dragend: (e) => handleMarkerDragEnd(fIdx, 0, e.target.getLatLng(), 'Point')
+                dragend: (e) => handleMarkerDragEnd(fIdx, 0, e.target.getLatLng(), 'Point'),
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onEditFeature(fIdx, 0);
+                }
               }}
             >
               <Popup>{feature.properties?.name || 'Point'}</Popup>
@@ -167,7 +179,11 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, mapThe
                   icon={vertexIcon}
                   draggable={true}
                   eventHandlers={{
-                    dragend: (e) => handleMarkerDragEnd(fIdx, cIdx, e.target.getLatLng(), 'Polygon', rIdx)
+                    dragend: (e) => handleMarkerDragEnd(fIdx, cIdx, e.target.getLatLng(), 'Polygon', rIdx),
+                    click: (e) => {
+                      L.DomEvent.stopPropagation(e);
+                      onEditFeature(fIdx, cIdx);
+                    }
                   }}
                 />
               );

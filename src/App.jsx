@@ -112,6 +112,53 @@ function App() {
     setDrawPoints(drawPoints.slice(0, -1));
   };
 
+  const deleteDrawPoint = (index) => {
+    // Menghapus titik pada index tersebut DAN semua titik setelahnya
+    const updated = drawPoints.slice(0, index);
+    setDrawPoints(updated);
+  };
+
+  const resumeDrawing = () => {
+    if (geoData.features.length === 0) return;
+    
+    const lastIdx = geoData.features.length - 1;
+    const lastFeature = geoData.features[lastIdx];
+    
+    // Hapus data yang sudah utuh agar tidak double saat dilanjutkan
+    const updatedFeatures = geoData.features.slice(0, -1);
+    handleDataUpdate({ ...geoData, features: updatedFeatures });
+
+    if (lastFeature.geometry.type === 'Polygon') {
+      const coords = lastFeature.geometry.coordinates[0].slice(0, -1);
+      setDrawPoints(coords);
+      setIsDrawing(true);
+    } else if (lastFeature.geometry.type === 'Point') {
+      setDrawPoints([lastFeature.geometry.coordinates]);
+      setIsDrawing(true);
+    }
+  };
+
+  const resumeFromFeature = (featureIndex, pointIndex) => {
+    const feature = geoData.features[featureIndex];
+    if (!feature) return;
+
+    // Hapus data yang sudah utuh
+    const updatedFeatures = [...geoData.features];
+    updatedFeatures.splice(featureIndex, 1);
+    handleDataUpdate({ ...geoData, features: updatedFeatures });
+
+    let coords = [];
+    if (feature.geometry.type === 'Polygon') {
+      // Ambil titik sampai index yang dipilih
+      coords = feature.geometry.coordinates[0].slice(0, pointIndex + 1);
+    } else if (feature.geometry.type === 'Point') {
+      coords = [feature.geometry.coordinates];
+    }
+    
+    setDrawPoints(coords);
+    setIsDrawing(true);
+  };
+
   // Shortcut for Undo (Ctrl+Z)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -163,6 +210,11 @@ function App() {
                 {mapTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </button>
               <button onClick={startDrawing} className="btn-primary"><PenTool size={18} /> Gambar</button>
+              {geoData.features.length > 0 && (
+                <button onClick={resumeDrawing} className="btn-ghost" style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+                  <Plus size={18} /> Lanjutkan
+                </button>
+              )}
               <button onClick={saveToLocal} className="btn-success"><Save size={18} /> Simpan</button>
               <button onClick={copyToClipboard} className="btn-ghost">
                 {copyStatus === 'Copied!' ? <CheckCircle size={18} color="#22c55e" /> : <Copy size={18} />}
@@ -241,6 +293,8 @@ function App() {
           <MapView 
             data={geoData} onUpdateData={handleDataUpdate}
             isDrawing={isDrawing} drawPoints={drawPoints} onAddPoint={handleAddPoint}
+            onDeleteDrawPoint={deleteDrawPoint}
+            onEditFeature={resumeFromFeature}
             mapTheme={mapTheme}
           />
         </div>
