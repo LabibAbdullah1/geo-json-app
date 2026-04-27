@@ -18,9 +18,9 @@ function App() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawPoints, setDrawPoints] = useState([]);
 
-  // Projects state
   const [savedProjects, setSavedProjects] = useState([]);
   const [copyStatus, setCopyStatus] = useState('Copy');
+  const [shouldFitBounds, setShouldFitBounds] = useState(false);
 
   const [mapTheme, setMapTheme] = useState('dark');
 
@@ -51,9 +51,10 @@ function App() {
     }
   }, [jsonString]);
 
-  const handleDataUpdate = (newData) => {
+  const handleDataUpdate = (newData, fit = false) => {
     setGeoData(newData);
     setJsonString(JSON.stringify(newData, null, 2));
+    if (fit) setShouldFitBounds(true);
   };
 
   const copyToClipboard = () => {
@@ -80,7 +81,7 @@ function App() {
   };
 
   const loadProject = (project) => {
-    handleDataUpdate(project.data);
+    handleDataUpdate(project.data, true);
   };
 
   const deleteProject = (id, e) => {
@@ -180,7 +181,7 @@ function App() {
       "geometry": { "type": "Polygon", "coordinates": coordinates }
     };
     const newData = { ...geoData, features: [...geoData.features, newFeature] };
-    handleDataUpdate(newData);
+    handleDataUpdate(newData, true);
     setIsDrawing(false);
     setDrawPoints([]);
   };
@@ -296,6 +297,8 @@ function App() {
             onDeleteDrawPoint={deleteDrawPoint}
             onEditFeature={resumeFromFeature}
             mapTheme={mapTheme}
+            shouldFitBounds={shouldFitBounds}
+            onFitBoundsComplete={() => setShouldFitBounds(false)}
           />
         </div>
       </main>

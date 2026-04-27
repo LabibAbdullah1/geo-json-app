@@ -29,21 +29,21 @@ function MapEvents({ onAddPoint, isDrawing }) {
   return null;
 }
 
-function BoundsHandler({ data, isDrawing }) {
+function BoundsHandler({ data, shouldFitBounds, onFitBoundsComplete }) {
   const map = useMap();
   useEffect(() => {
-    // Auto-fit bounds dinonaktifkan agar tidak mengganggu posisi view user saat mengedit
-    /*
-    if (!isDrawing && data && data.features && data.features.length > 0) {
+    if (shouldFitBounds && data && data.features && data.features.length > 0) {
       try {
         const bounds = L.geoJSON(data).getBounds();
         if (bounds.isValid()) {
           map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+          onFitBoundsComplete();
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Error fitting bounds:", e);
+      }
     }
-    */
-  }, [data, map, isDrawing]);
+  }, [data, map, shouldFitBounds, onFitBoundsComplete]);
   return null;
 }
 
@@ -57,7 +57,7 @@ function ZoomControls() {
   );
 }
 
-const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDeleteDrawPoint, onEditFeature, mapTheme }) => {
+const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDeleteDrawPoint, onEditFeature, mapTheme, shouldFitBounds, onFitBoundsComplete }) => {
   
   const tileUrl = mapTheme === 'light' 
     ? "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -216,7 +216,7 @@ const MapView = ({ data, onUpdateData, isDrawing, drawPoints, onAddPoint, onDele
         return null;
       })}
       
-      <BoundsHandler data={data} isDrawing={isDrawing} />
+      <BoundsHandler data={data} shouldFitBounds={shouldFitBounds} onFitBoundsComplete={onFitBoundsComplete} />
       <ZoomControls />
     </MapContainer>
   );
